@@ -336,7 +336,7 @@
   // At 300+ photos a full-fidelity in-memory ZIP blows past the iOS PWA
   // memory ceiling and the tab is killed mid-export. Re-encode each photo
   // here to keep peak memory an order of magnitude smaller while staying
-  // above the resolution a DEA report needs.
+  // above the resolution an NDEA report needs.
   const ZIP_MAX_DIMENSION = 2200;
   const ZIP_JPEG_QUALITY = 0.82;
 
@@ -4778,7 +4778,7 @@
       const dt = exifDateTime(photo.takenAt || new Date().toISOString());
       const zeroth = {
         [piexif.ImageIFD.DateTime]: dt,
-        [piexif.ImageIFD.Software]: "DEA Photo Evidence",
+        [piexif.ImageIFD.Software]: "NDEA Photo Evidence",
       };
       const exif = {
         [piexif.ExifIFD.DateTimeOriginal]: dt,
@@ -5828,7 +5828,7 @@ td:empty::before,td.empty{color:#94a3b8;content:"—"}
     doc.setFont("helvetica", "bold");
     doc.setFontSize(22);
     doc.setTextColor(15, 23, 42);
-    doc.text("DEA Photo Evidence Report", margin, coverContentY + 10);
+    doc.text("NDEA Photo Evidence Report", margin, coverContentY + 10);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
@@ -6594,7 +6594,7 @@ td:empty::before,td.empty{color:#94a3b8;content:"—"}
 
   function buildHtmlIndex(photoPaths) {
     const meta = state.property.meta || {};
-    const title = state.property.name || meta.address || "DEA Photo Evidence";
+    const title = state.property.name || meta.address || "NDEA Photo Evidence";
 
     // Flatten every photo into a lean data record for the embedded viewer.
     // Groups list their photoIds in display order so filtering keeps the
@@ -7086,7 +7086,7 @@ body:not(.js-ready) .app{display:none}
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <base href="./">
-<title>${escapeHtml(title)} — DEA Photo Evidence</title>
+<title>${escapeHtml(title)} — NDEA Photo Evidence</title>
 <style>${css}</style>
 </head>
 <body>
@@ -7282,7 +7282,7 @@ ${nojsFallback}
     if (numParts > 1) {
       zip.file(
         "README.txt",
-        `DEA Photo Evidence — originals export\n` +
+        `NDEA Photo Evidence — originals export\n` +
           `Part ${partIdx + 1} of ${numParts}\n` +
           `Photos in this archive: ${processed}\n`
       );
@@ -7298,7 +7298,7 @@ ${nojsFallback}
     const result = await deliverBlob(zipBlob, filename, {
       share: plan.share,
       title: numParts > 1 ? `${filename} (part ${partIdx + 1}/${numParts})` : filename,
-      text: `DEA Photo Evidence — ${plan.propertyName || ""}`.trim(),
+      text: `NDEA Photo Evidence — ${plan.propertyName || ""}`.trim(),
     });
     zipBlob = null;
     if (result !== "cancelled") {
@@ -7703,7 +7703,7 @@ ${nojsFallback}
         } else if (numParts > 1) {
           zip.file(
             "README.txt",
-            `DEA Photo Evidence — originals export\n` +
+            `NDEA Photo Evidence — originals export\n` +
               `Part ${partIdx + 1} of ${numParts}\n` +
               `Photos in this archive: ${items.length}\n` +
               `Total photos in the property: ${total}\n`
@@ -7726,7 +7726,7 @@ ${nojsFallback}
         const result = await deliverBlob(zipBlob, filename, {
           share,
           title: partTitle,
-          text: `DEA Photo Evidence — ${state.property.name || ""}`.trim(),
+          text: `NDEA Photo Evidence — ${state.property.name || ""}`.trim(),
         });
         // Drop our refs so the browser can reclaim ~2 × chunk size of
         // memory before the next chunk starts building. On iOS PWA

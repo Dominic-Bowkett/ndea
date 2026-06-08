@@ -1,6 +1,6 @@
 # Photo Evidence
 
-A single-page web app for domestic energy assessors (DEAs) to collect photo
+A single-page web app for domestic energy assessors (NDEAs) to collect photo
 evidence on site. Every photo is taken with an in-app camera and re-rendered
 with a **date/time and GPS stamp in the bottom-right corner**, grouped under
 labelled sections, and exported as a PDF report and/or a ZIP bundle

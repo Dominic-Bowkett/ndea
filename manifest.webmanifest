@@ -1,7 +1,7 @@
 {
   "id": "/ndea/",
-  "name": "DEA Photo Evidence",
-  "short_name": "DEA Photos",
+  "name": "NDEA Photo Evidence",
+  "short_name": "NDEA Photos",
   "description": "Stamped and geotagged photo evidence for Domestic Energy Assessors.",
   "start_url": "./",
   "scope": "./",
