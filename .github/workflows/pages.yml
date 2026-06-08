@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - claude/publish-github-pages-VRz79
+      - claude/dea-photos-setup-2NERM
   workflow_dispatch:
 
 permissions:
