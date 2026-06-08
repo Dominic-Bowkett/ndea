@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>DEA Photo Evidence — Domestic Energy Assessor</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="icon.png?v=2" />
+    <link rel="apple-touch-icon" href="icon.png?v=2" />
+    <meta name="application-name" content="DEA Photo Evidence" />
+    <meta name="apple-mobile-web-app-title" content="DEA Photo Evidence" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="stylesheet" href="style.css?v=103" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <img class="logo logo-img" src="logo.png?v=2" alt="Energy Trust" />
+        <div>
+          <h1>DEA Photo Evidence</h1>
+          <p class="subtitle">Domestic Energy Assessor — stamped &amp; geotagged</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="header-row header-row-utility">
+          <div class="property-switcher">
+            <label for="property-select" class="sr-only">Current property</label>
+            <select id="property-select" aria-label="Current property"></select>
+            <button id="btn-new-property" class="btn btn-ghost" type="button" title="New property">+ New</button>
+          </div>
+          <div class="header-icon-buttons">
+            <!-- GPS and Refresh buttons hidden — GPS still auto-prompts
+                 on load and stamps every capture. Uncomment to bring
+                 the manual controls back.
+            <button id="btn-enable-gps" class="btn btn-ghost btn-icon" type="button" title="GPS">
+              <span class="dot" id="gps-dot"></span>
+              <span id="gps-label">GPS</span>
+            </button>
+            <button id="btn-refresh" class="btn btn-ghost btn-icon" type="button" title="Reload the app" aria-label="Reload the app">
+              <span aria-hidden="true">&#x21BB;</span>
+            </button>
+            -->
+            <!-- AI features hidden — uncomment to re-enable Claude API settings and auto-label/tag.
+            <button id="btn-settings" class="btn btn-ghost btn-icon" type="button" title="Settings" aria-label="Settings">
+              <span aria-hidden="true">⚙</span>
+            </button>
+            <button id="btn-autolabel" class="btn btn-ghost btn-icon" type="button" title="Auto-label &amp; tag photos with AI" aria-label="Auto-label and tag photos with AI">
+              <span aria-hidden="true">✨</span>
+            </button>
+            -->
+
+          </div>
+        </div>
+        <div class="header-row header-row-export">
+          <button id="btn-export-photos" class="btn" type="button" disabled>Export photos</button>
+          <button id="btn-export" class="btn btn-primary" type="button" disabled>Download PDF</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="card meta" id="meta-card">
+        <div class="meta-header" id="meta-header" role="button" tabindex="0" aria-expanded="true" aria-controls="meta-grid">
+          <div class="meta-heading">
+            <span class="group-chevron meta-chevron" aria-hidden="true">▾</span>
+            <h2>Job details</h2>
+          </div>
+          <div class="meta-actions">
+            <span class="save-status" id="save-status" aria-live="polite">Saved</span>
+            <button id="btn-delete-property" class="btn btn-danger-ghost" type="button">Delete property</button>
+          </div>
+        </div>
+        <div class="grid" id="meta-grid">
+          <label>
+            <span>Property address</span>
+            <input id="meta-name" type="text" placeholder="e.g. 12 Acacia Avenue" autocomplete="street-address" />
+          </label>
+          <label>
+            <span>Assessor</span>
+            <input id="meta-assessor" type="text" placeholder="e.g. J. Smith" autocomplete="name" />
+          </label>
+          <!-- Separate Property address / Job reference fields removed —
+               the property name above doubles as the address.
+          <label>
+            <span>Property address</span>
+            <input id="meta-address" type="text" placeholder="Full address" autocomplete="street-address" />
+          </label>
+          <label>
+            <span>Job reference</span>
+            <input id="meta-ref" type="text" placeholder="e.g. EPC-2026-00421" />
+          </label>
+          -->
+          <label>
+            <span>Date of assessment</span>
+            <input id="meta-date" type="date" />
+          </label>
+        </div>
+      </section>
+
+      <!-- Totals card hidden — uncomment to re-enable the per-property totals (rooms, lights, chimneys, flues, ventilation).
+      <section class="card totals-card" id="totals-card" aria-label="Property totals">
+        <div class="totals-header" id="totals-header" role="button" tabindex="0" aria-expanded="false" aria-controls="totals-grid">
+          <span class="group-chevron totals-chevron" aria-hidden="true">&#x25BE;</span>
+          <h2 class="totals-card-title">Totals</h2>
+        </div>
+        <div class="totals-grid" id="totals-grid">
+          <div class="totals-block">
+            <span class="totals-block-title">Habitable rooms</span>
+            <dl class="totals-list">
+              <div><dt>Heated</dt><dd id="totals-rooms-heated">0</dd></div>
+              <div><dt>Unheated</dt><dd id="totals-rooms-unheated">0</dd></div>
+            </dl>
+          </div>
+          <div class="totals-block">
+            <span class="totals-block-title">Lights</span>
+            <dl class="totals-list">
+              <div><dt>LED</dt><dd id="totals-lights-led">0</dd></div>
+              <div><dt>CFL</dt><dd id="totals-lights-cfl">0</dd></div>
+              <div><dt>Incandescent</dt><dd id="totals-lights-incandescent">0</dd></div>
+            </dl>
+          </div>
+          <div class="totals-block">
+            <span class="totals-block-title">Chimneys</span>
+            <dl class="totals-list">
+              <div><dt>Open</dt><dd id="totals-chimneys-open">0</dd></div>
+              <div><dt>Blocked</dt><dd id="totals-chimneys-blocked">0</dd></div>
+            </dl>
+          </div>
+          <div class="totals-block">
+            <span class="totals-block-title">Flues</span>
+            <dl class="totals-list">
+              <div><dt>Open</dt><dd id="totals-flues-open">0</dd></div>
+              <div><dt>Closed</dt><dd id="totals-flues-closed">0</dd></div>
+              <div><dt>Boiler</dt><dd id="totals-flues-boiler">0</dd></div>
+              <div><dt>Other</dt><dd id="totals-flues-other">0</dd></div>
+            </dl>
+          </div>
+          <div class="totals-block">
+            <span class="totals-block-title">Ventilation</span>
+            <dl class="totals-list">
+              <div><dt>Trickle</dt><dd id="totals-vent-trickle">0</dd></div>
+              <div><dt>Core</dt><dd id="totals-vent-core">0</dd></div>
+              <div><dt>IEV</dt><dd id="totals-vent-iev">0</dd></div>
+              <div><dt>DMEV</dt><dd id="totals-vent-dmev">0</dd></div>
+            </dl>
+          </div>
+        </div>
+      </section>
+      -->
+
+
+      <!-- View toggle hidden — single by-group view now.
+      <div class="view-toggle" role="tablist" aria-label="Photo layout">
+        <button class="view-toggle-btn is-active" data-view="group" role="tab" aria-selected="true" type="button">By Group</button>
+        <button class="view-toggle-btn" data-view="tag" role="tab" aria-selected="false" type="button">By Tag</button>
+      </div>
+      -->
+
+      <section class="card capture-card" aria-label="Capture photos">
+        <div class="rooms-card-header">
+          <h2>Take or upload photos</h2>
+          <p class="rooms-card-hint">Pick a category, then capture or upload. Leave it on No Category Defined to file photos from the lightbox later.</p>
+        </div>
+        <div class="capture-controls">
+          <label class="capture-tag-wrap">
+            <span class="sr-only">Tag for next capture</span>
+            <select id="capture-tag" aria-label="Tag for next capture"></select>
+          </label>
+        </div>
+        <div class="group-capture-block">
+          <button id="btn-capture-take" type="button" class="thumb thumb-add" title="Take a photo">
+            <span class="thumb-add-inner">
+              <span class="thumb-add-plus" aria-hidden="true">+</span>
+              <span class="thumb-add-label">Take photo</span>
+            </span>
+          </button>
+          <div class="capture-actions-row">
+            <label class="btn btn-upload">
+              <input type="file" id="capture-upload" accept="image/*" multiple hidden />
+              Upload
+            </label>
+            <button id="btn-view-photos" class="btn" type="button">View photos</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="groups" class="groups" aria-label="Photo groups"></section>
+
+      <section class="card windows-card collapsed" id="windows-card" aria-label="Window measurements">
+        <div class="windows-header" id="windows-header" role="button" tabindex="0" aria-expanded="false" aria-controls="windows-body">
+          <span class="group-chevron windows-chevron" aria-hidden="true">&#x25BE;</span>
+          <h2>Window Measurements (optional)</h2>
+        </div>
+        <div class="windows-body" id="windows-body">
+          <p class="rooms-card-hint">Add every window in the property and download a window schedule. Hold your phone facing the window and click the pin icon to capture orientation automatically.</p>
+          <div id="windows" class="windows-list" aria-label="Windows list"></div>
+          <div class="add-room-row add-window-row">
+            <button id="btn-add-window-property" class="btn btn-primary-soft" type="button">+ Add window</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Rooms card hidden — uncomment to re-enable per-room photo grouping.
+      <section class="card rooms-card" aria-label="Rooms">
+        <div class="rooms-card-header">
+          <h2>Rooms</h2>
+          <p class="rooms-card-hint">Add a room for each space you photograph, then tag each photo (Room, Undercuts, Lighting, Heating, Secondary Heating, Ventilation, Renewables, Meters, Other).</p>
+        </div>
+        <section id="rooms" class="rooms" aria-label="Rooms list"></section>
+        <div class="add-room-row">
+          <label class="add-room-type-wrap">
+            <span class="sr-only">Room type</span>
+            <select id="new-room-type" aria-label="Room type"></select>
+          </label>
+          <button id="btn-add-room" class="btn btn-primary-soft" type="button">+ Add room</button>
+        </div>
+      </section>
+      -->
+
+      <section class="card tips">
+        <div class="tips-hero">
+          <img class="tips-logo" src="logo.png?v=2" alt="Energy Trust" />
+          <h2>How it works</h2>
+        </div>
+        <ul>
+          <li>Fill in the <strong>property address</strong>, your <strong>name</strong> and the <strong>date of assessment</strong> at the top.</li>
+          <li>Allow location when the browser asks — every capture is stamped with a <strong>date/time and GPS overlay</strong> in the bottom-right corner.</li>
+          <li>Use the <strong>Take or upload</strong> box to capture or upload photos. Pick a category from the dropdown first, or leave it on <strong>No Category Defined</strong> and tag photos later from the lightbox.</li>
+          <li>You can also tap <strong>Take photo</strong> or <strong>Upload</strong> inside any category card — those captures go straight into that category.</li>
+          <li>Tap a thumbnail to open the lightbox. From there you can rename a photo, switch its category, or delete it.</li>
+          <li>If a category doesn't apply to this property, tap <strong>N/A</strong> on its header — it stops nagging you on download.</li>
+          <li>Optional: open <strong>Window Measurements</strong> to record window types, ages, sizes and orientation. The pin button reads the phone's compass to set orientation.</li>
+          <li>When you're done, tap <strong>Download PDF</strong> or <strong>Export photos</strong>. The app will warn you about untagged photos or empty categories first.</li>
+          <li>Work is autosaved to this browser — refresh or close the tab and it's still here. Switch between multiple properties using the picker at the top.</li>
+        </ul>
+        <p class="storage-warning tips-storage-warning">
+          <strong>Important:</strong> photos and data are stored locally
+          in this browser. Clearing your cache or browsing history
+          <strong>will delete your photos</strong>. After each
+          assessment, tap <strong>Download PDF</strong> and
+          <strong>Export photos</strong> and save the files locally.
+        </p>
+        <p class="tips-support">
+          Need help? Email
+          <a href="mailto:helpline@energy-trust.co.uk">helpline@energy-trust.co.uk</a>.
+        </p>
+      </section>
+    </main>
+
+    <template id="group-template">
+      <article class="card group" data-group-id="">
+        <header class="group-header" role="button" tabindex="0" aria-expanded="false">
+          <span class="group-chevron" aria-hidden="true">&#x25BE;</span>
+          <div class="group-title-wrap">
+            <h2 class="group-title" contenteditable="true" spellcheck="false"></h2>
+            <span class="group-count">0 photos</span>
+          </div>
+          <div class="group-header-actions">
+            <button class="btn btn-ghost-dark btn-na-toggle" type="button" aria-pressed="false" title="Mark this category as not applicable for this property">N/A</button>
+          </div>
+        </header>
+        <div class="group-body">
+          <div class="group-capture-block">
+            <button type="button" class="thumb thumb-add btn-take-photo-tile" title="Take a photo">
+              <span class="thumb-add-inner">
+                <span class="thumb-add-plus" aria-hidden="true">+</span>
+                <span class="thumb-add-label">Take photo</span>
+              </span>
+            </button>
+            <label class="btn btn-upload">
+              <input type="file" class="file-input-upload" accept="image/*" multiple hidden />
+              Upload
+            </label>
+          </div>
+          <p class="group-help">Help text — placeholder line, real copy coming soon.</p>
+          <div class="thumbs"></div>
+          <div class="group-actions">
+            <button class="btn btn-ghost-dark btn-remove-group" type="button" title="Remove group">Remove</button>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <template id="thumb-template">
+      <figure class="thumb" draggable="true">
+        <!-- Per-thumb tag bar hidden — building (Main/Ext1...) and the
+             legacy room-tag select are no longer used; categories are
+             managed exclusively from the lightbox.
+        <div class="thumb-tagbar">
+          <select class="thumb-building" aria-label="Building tag">
+            <option value="Main">Main</option>
+            <option value="Ext1">Ext1</option>
+            <option value="Ext2">Ext2</option>
+            <option value="Ext3">Ext3</option>
+            <option value="Ext4">Ext4</option>
+          </select>
+          <select class="thumb-roomtag" aria-label="Room tag" hidden>
+            <option value="">&mdash; Tag &mdash;</option>
+          </select>
+          <span class="thumb-group-hint"></span>
+        </div>
+        -->
+        <img alt="" />
+        <figcaption>
+          <div class="thumb-row">
+            <input type="text" class="thumb-label" placeholder="Label" />
+            <button type="button" class="thumb-save" title="Save this photo" aria-label="Save this photo">↓</button>
+            <button type="button" class="thumb-remove" title="Remove photo" aria-label="Remove photo">&times;</button>
+          </div>
+          <!-- Defect chip hidden — uncomment to re-enable per-photo defect flagging.
+          <button type="button" class="thumb-defect" aria-pressed="false" title="Toggle defect">
+            <span class="thumb-defect-dot" aria-hidden="true"></span>
+            <span class="thumb-defect-label">No defect</span>
+          </button>
+          -->
+        </figcaption>
+      </figure>
+    </template>
+
+    <template id="room-template">
+      <article class="card room" data-room-id="">
+        <header class="room-header" role="button" tabindex="0" aria-expanded="true">
+          <div class="room-title-wrap">
+            <input type="text" class="room-title-input" aria-label="Room name" placeholder="Room name" spellcheck="false" />
+            <span class="room-photo-count">0 photos</span>
+          </div>
+          <div class="room-controls">
+            <label class="room-control">
+              <span class="sr-only">Room type</span>
+              <select class="room-type" aria-label="Room type"></select>
+            </label>
+            <label class="room-control">
+              <span class="sr-only">Habitability</span>
+              <select class="room-habitability" aria-label="Habitability"></select>
+            </label>
+            <button class="room-heated-chip" type="button" aria-pressed="true" data-state="heated">
+              <span class="room-heated-dot" aria-hidden="true"></span>
+              <span class="room-heated-text">Heated</span>
+            </button>
+            <button class="btn btn-primary-soft btn-take-photo" type="button">Take photo</button>
+            <label class="btn btn-upload">
+              <input type="file" class="file-input-upload" accept="image/*" multiple hidden />
+              Upload
+            </label>
+            <button class="btn btn-ghost-dark btn-remove-room" type="button" title="Remove room">Remove</button>
+          </div>
+          <button type="button" class="accordion-toggle accordion-toggle-room" aria-label="Open or close this room">
+            <span class="accordion-toggle-icon" aria-hidden="true">▾</span>
+          </button>
+        </header>
+        <div class="room-body">
+          <fieldset class="room-counts" aria-label="Lighting count">
+            <legend class="room-counts-legend">Lights</legend>
+            <label class="room-count">
+              <span class="room-count-label">LED</span>
+              <input type="number" class="room-count-input" data-count="lights" data-key="led" min="0" max="999" step="1" maxlength="3" inputmode="numeric" />
+            </label>
+            <label class="room-count">
+              <span class="room-count-label">CFL</span>
+              <input type="number" class="room-count-input" data-count="lights" data-key="cfl" min="0" max="999" step="1" maxlength="3" inputmode="numeric" />
+            </label>
+            <label class="room-count">
+              <span class="room-count-label">Incand.</span>
+              <input type="number" class="room-count-input" data-count="lights" data-key="incandescent" min="0" max="999" step="1" maxlength="3" inputmode="numeric" />
+            </label>
+          </fieldset>
+          <fieldset class="room-counts" aria-label="Chimney count">
+            <legend class="room-counts-legend">Chimneys</legend>
+            <label class="room-count">
+              <span class="room-count-label">Open</span>
+              <input type="number" class="room-count-input" data-count="chimneys" data-key="open" min="0" max="999" step="1" maxlength="3" inputmode="numeric" />
+            </label>
+            <label class="room-count">
+              <span class="room-count-label">Blocked</span>
+              <input type="number" class="room-count-input" data-count="chimneys" data-key="blocked" min="0" max="999" step="1" maxlength="3" inputmode="numeric" />
+            </label>
+          </fieldset>
+          <fieldset class="room-counts" aria-label="Flue count">
+            <legend class="room-counts-legend">Flues</legend>
+            <label class="room-count">
+              <span class="room-count-label">Open</span>
+              <input type="number" class="room-count-input" data-count="flues" data-key="open" min="0" max="999" step="1" maxlength="3" inputmode="numeric" />
+            </label>
+            <label class="room-count">
+              <span class="room-count-label">Closed</span>
+              <input type="number" class="room-count-input" data-count="flues" data-key="closed" min="0" max="999" step="1" maxlength="3" inputmode="numeric" />
+            </label>
+            <label class="room-count">
+              <span class="room-count-label">Boiler</span>
+              <input type="number" class="room-count-input" data-count="flues" data-key="boiler" min="0" max="999" step="1" maxlength="3" inputmode="numeric" value="0" />
+            </label>
+            <label class="room-count">
+              <span class="room-count-label">Other</span>
+              <input type="number" class="room-count-input" data-count="flues" data-key="other" min="0" max="999" step="1" maxlength="3" inputmode="numeric" />
+            </label>
+          </fieldset>
+          <fieldset class="room-counts" aria-label="Ventilation count">
+            <legend class="room-counts-legend">Ventilation</legend>
+            <label class="room-count">
+              <span class="room-count-label">Trickle</span>
+              <input type="number" class="room-count-input" data-count="ventilation" data-key="trickle" min="0" max="999" step="1" maxlength="3" inputmode="numeric" />
+            </label>
+            <label class="room-count">
+              <span class="room-count-label">Core</span>
+              <input type="number" class="room-count-input" data-count="ventilation" data-key="core" min="0" max="999" step="1" maxlength="3" inputmode="numeric" />
+            </label>
+            <label class="room-count">
+              <span class="room-count-label">IEV</span>
+              <input type="number" class="room-count-input" data-count="ventilation" data-key="iev" min="0" max="999" step="1" maxlength="3" inputmode="numeric" />
+            </label>
+            <label class="room-count">
+              <span class="room-count-label">DMEV</span>
+              <input type="number" class="room-count-input" data-count="ventilation" data-key="dmev" min="0" max="999" step="1" maxlength="3" inputmode="numeric" />
+            </label>
+          </fieldset>
+          <!-- Per-room windows stack hidden — windows now live in a top-level Windows section.
+          <div class="room-windows-stack" aria-label="Windows">
+            <div class="room-windows-stack-list"></div>
+            <button type="button" class="btn btn-primary-soft btn-add-window">+ Add window</button>
+          </div>
+          -->
+          <label class="room-notes">
+            <span class="room-counts-legend">Notes</span>
+            <textarea class="room-notes-input" rows="3" placeholder="Free-text notes for this room…" spellcheck="true"></textarea>
+          </label>
+          <div class="room-photos">
+            <div class="thumbs">
+              <button type="button" class="thumb thumb-add btn-take-photo-tile" title="Take another photo">
+                <span class="thumb-add-inner">
+                  <span class="thumb-add-plus" aria-hidden="true">+</span>
+                  <span class="thumb-add-label">Take photo</span>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <template id="room-window-template">
+      <fieldset class="room-windows" aria-label="Window">
+        <legend class="room-counts-legend room-windows-legend">
+          <span class="room-windows-title">Window</span>
+          <button type="button" class="room-windows-roof" aria-pressed="false" data-state="off" title="Roof window (skylight, Velux). Adds Horizontal as an orientation option.">
+            <span class="room-windows-roof-dot" aria-hidden="true"></span>
+            <span class="room-windows-roof-text">Roof</span>
+          </button>
+          <button type="button" class="room-windows-shutters" aria-pressed="false" data-state="off" title="Window has shutters">
+            <span class="room-windows-roof-dot" aria-hidden="true"></span>
+            <span class="room-windows-shutters-text">Shutters</span>
+          </button>
+          <button type="button" class="room-windows-insulated" aria-pressed="false" data-state="off" title="Shutters are insulated" hidden>
+            <span class="room-windows-roof-dot" aria-hidden="true"></span>
+            <span class="room-windows-insulated-text">Insulated</span>
+          </button>
+          <button type="button" class="room-windows-remove" aria-label="Remove this window">✕</button>
+        </legend>
+        <!-- Window Photo (auto orientation) removed — the compass pin
+             button next to the orientation dropdown captures the same
+             heading on demand without needing to open the camera.
+        <div class="room-windows-photo-row">
+          <button type="button" class="btn btn-primary-soft btn-window-photo" title="Take a photo of this window">
+            <span aria-hidden="true">&#x1F4F7;</span>
+            <span>Window Photo (auto orientation)</span>
+          </button>
+        </div>
+        -->
+        <div class="room-windows-row">
+          <label class="room-windows-field">
+            <span class="room-windows-label">Type</span>
+            <select class="room-windows-type" aria-label="Window type"></select>
+          </label>
+          <label class="room-windows-field">
+            <span class="room-windows-label">Age</span>
+            <select class="room-windows-age" aria-label="Window age"></select>
+          </label>
+          <div class="room-windows-field room-windows-orient-wrap">
+            <span class="room-windows-label">Orientation</span>
+            <div class="room-windows-orient-row">
+              <select class="room-windows-orientation" aria-label="Orientation"></select>
+              <button type="button" class="room-windows-compass" title="Set orientation from the phone's compass — face the window with the back of the phone">
+                <span aria-hidden="true">📍</span>
+              </button>
+            </div>
+          </div>
+          <label class="room-windows-field room-windows-frame-wrap">
+            <span class="room-windows-label">Frame</span>
+            <select class="room-windows-frame" aria-label="Frame type"></select>
+          </label>
+        </div>
+        <div class="room-windows-gap-wrap" hidden>
+          <span class="room-windows-label">Glazing gap</span>
+          <div class="room-windows-gap-row" role="group" aria-label="Glazing gap">
+            <button type="button" class="room-windows-gap-btn" data-gap="6mm" aria-pressed="false">6mm</button>
+            <button type="button" class="room-windows-gap-btn" data-gap="12mm" aria-pressed="false">12mm</button>
+            <button type="button" class="room-windows-gap-btn" data-gap="16mm" aria-pressed="false">16mm</button>
+          </div>
+        </div>
+        <div class="room-windows-size-row">
+          <label class="room-windows-field room-windows-size">
+            <span class="room-windows-label">Width</span>
+            <input type="text" class="room-windows-width" inputmode="decimal" placeholder="e.g. 1.250 m" />
+          </label>
+          <label class="room-windows-field room-windows-size">
+            <span class="room-windows-label">Height</span>
+            <input type="text" class="room-windows-height" inputmode="decimal" placeholder="e.g. 1.500 m" />
+          </label>
+          <!-- Laser-measurer capture hidden — uncomment to re-enable.
+          <button type="button" class="btn btn-primary-soft btn-capture-laser" title="Take a photo of the laser measurer's screen — width = longest reading, height = shortest">
+            <span aria-hidden="true">&#x1F4F7;</span>
+            <span>Capture from laser</span>
+          </button>
+          -->
+        </div>
+      </fieldset>
+    </template>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <div id="welcome-dialog" class="dialog" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+      <div class="dialog-backdrop" id="welcome-backdrop"></div>
+      <div class="dialog-card welcome-card">
+        <div class="welcome-hero">
+          <img class="welcome-logo" src="logo.png?v=2" alt="Energy Trust" />
+        </div>
+        <h2 id="welcome-title">Welcome to DEA Photo Evidence</h2>
+        <p>Quick rundown before you start:</p>
+        <ul class="welcome-list">
+          <li>Fill in the <strong>property address</strong>, your <strong>name</strong> and the <strong>date of assessment</strong> at the top.</li>
+          <li>Allow location when the browser asks — every capture is stamped with a <strong>date/time and GPS overlay</strong> in the bottom-right corner.</li>
+          <li>Use the <strong>Take or upload</strong> box to capture or upload photos. Pick a category from the dropdown first, or leave it on <strong>No Category Defined</strong> and tag photos later from the lightbox.</li>
+          <li>Tap <strong>Take photo</strong> or <strong>Upload</strong> inside any category card — those captures go straight into that category.</li>
+          <li>Tap a thumbnail to open the lightbox. Rename a photo, switch its category, or delete it.</li>
+          <li>If a category doesn't apply, tap <strong>N/A</strong> on its header — it stops nagging you on download.</li>
+          <li>Optional: open <strong>Window Measurements</strong> to record window types, ages, sizes and orientation. The pin button reads the phone's compass to set orientation.</li>
+          <li>When you're done, tap <strong>Download PDF</strong> or <strong>Export photos</strong>. The app will warn you about untagged photos or empty categories first.</li>
+          <li>Work is autosaved to this browser — refresh or close the tab and it's still here.</li>
+        </ul>
+        <p class="dialog-help storage-warning">
+          <strong>Important:</strong> photos and data are stored locally
+          in this browser. Clearing your cache or browsing history
+          <strong>will delete your photos</strong>. After each
+          assessment, tap <strong>Download PDF</strong> and
+          <strong>Export photos</strong> and save the files locally.
+        </p>
+        <div class="welcome-install">
+          <h3 class="welcome-install-title">Add to Home Screen</h3>
+          <div class="welcome-install-help">
+            <p><strong>iPhone / iPad (Safari):</strong> tap the <em>Share</em> icon at the bottom of the screen, scroll down and choose <em>Add to Home Screen</em>, then tap <em>Add</em>.</p>
+            <p><strong>Android (Chrome):</strong> tap the <em>menu</em> (&#x22EE;) at the top right and choose <em>Install app</em> or <em>Add to Home screen</em>.</p>
+            <p>Once installed, the app opens fullscreen from your home screen and works offline for capture.</p>
+          </div>
+        </div>
+        <div class="welcome-terms" aria-label="Terms of use">
+          <h3 class="welcome-install-title">Terms of use</h3>
+          <p>
+            By tapping <strong>Accept</strong> you agree to Energy Trust's
+            <a href="https://energy-trust.co.uk/terms-conditions/" target="_blank" rel="noopener">Terms &amp; Conditions</a>
+            and <a href="https://energy-trust.co.uk/privacy-policy/" target="_blank" rel="noopener">Privacy Policy</a>.
+          </p>
+          <p>
+            This app is provided <strong>"as is"</strong> with no warranties,
+            express or implied.
+          </p>
+          <p>
+            All photos and data are stored locally on this device — nothing is
+            uploaded to Energy Trust's servers. You are responsible for the
+            photos and the data you collect with the app.
+          </p>
+          <p>
+            Clearing your browser's cache, cookies or site data
+            <strong>will permanently delete your photos</strong>. After each
+            project, tap <strong>Download PDF</strong> and
+            <strong>Export photos</strong> and store the files securely.
+          </p>
+        </div>
+        <p class="dialog-help support-line">
+          Need help? Email
+          <a href="mailto:helpline@energy-trust.co.uk">helpline@energy-trust.co.uk</a>.
+        </p>
+        <div class="dialog-actions">
+          <button class="btn btn-primary" id="welcome-accept" type="button">Accept</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="bulk-label-banner" class="bulk-label-banner" hidden role="status" aria-live="polite">
+      <span class="bulk-label-text" id="bulk-label-text">Labelling…</span>
+      <button type="button" class="btn btn-danger-ghost" id="bulk-label-cancel">Cancel</button>
+    </div>
+
+    <button id="collapse-fab" class="collapse-fab" type="button" hidden aria-label="Collapse all open sections">
+      <span class="collapse-fab-arrow" aria-hidden="true">▴</span>
+      <span class="collapse-fab-text">Close all</span>
+    </button>
+
+    <div id="lightbox" class="lightbox" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="Photo editor">
+      <div class="lightbox-brand">
+        <img class="lightbox-logo" src="logo.png?v=2" alt="Energy Trust" />
+        <button class="lightbox-btn lightbox-close" type="button" aria-label="Close">&times;</button>
+      </div>
+      <div class="lightbox-label-bar">
+        <label for="lightbox-label" class="lightbox-label-tag">Title</label>
+        <div class="lightbox-label-field">
+          <input type="text" id="lightbox-label" class="lightbox-label-input" placeholder="Tap to add a title" aria-label="Photo title" />
+          <span class="lightbox-label-edit" aria-hidden="true">&#x270E;</span>
+        </div>
+      </div>
+      <div class="lightbox-stage">
+        <button class="lightbox-btn lightbox-prev" type="button" aria-label="Previous photo">&#x2039;</button>
+        <img id="lightbox-img" alt="" />
+        <button class="lightbox-btn lightbox-next" type="button" aria-label="Next photo">&#x203A;</button>
+      </div>
+      <footer class="lightbox-footer">
+        <div class="lightbox-caption" aria-label="Capture details">
+          <span class="lightbox-caption-text" id="lightbox-caption"></span>
+        </div>
+        <div class="lightbox-controls">
+          <!-- Building dropdown hidden — buildings (Main / Ext1-4) are
+               no longer surfaced; photo.building stays as data and
+               defaults to Main.
+          <label class="lightbox-control">
+            <span>Building</span>
+            <select id="lightbox-building">
+              <option value="Main">Main</option>
+              <option value="Ext1">Ext1</option>
+              <option value="Ext2">Ext2</option>
+              <option value="Ext3">Ext3</option>
+              <option value="Ext4">Ext4</option>
+            </select>
+          </label>
+          -->
+          <label class="lightbox-control">
+            <span>Tag</span>
+            <select id="lightbox-tag"></select>
+          </label>
+          <!-- Lightbox defect chip hidden — uncomment to re-enable.
+          <button type="button" id="lightbox-defect" class="lightbox-chip" aria-pressed="false">
+            <span class="lightbox-chip-dot" aria-hidden="true"></span>
+            <span class="lightbox-chip-label">No defect</span>
+          </button>
+          -->
+          <button type="button" id="lightbox-delete" class="lightbox-danger" aria-label="Delete photo">Delete</button>
+        </div>
+        <div class="lightbox-header lightbox-header-bottom">
+          <label class="lightbox-filter-wrap">
+            <span class="lightbox-filter-label">Showing</span>
+            <select id="lightbox-filter" aria-label="Filter photos"></select>
+          </label>
+          <span class="lightbox-counter" id="lightbox-counter"></span>
+        </div>
+        <!-- AI analysis controls hidden — uncomment to re-enable Claude-driven photo analyses.
+        <div class="lightbox-analyse-row">
+          <select id="lightbox-analyse-preset" aria-label="Analysis preset">
+            <option value="">Analyse as&hellip;</option>
+          </select>
+          <button type="button" id="lightbox-analyse-run" class="lightbox-analyse-btn">Run analysis</button>
+        </div>
+        <div class="lightbox-analyses" id="lightbox-analyses" aria-label="Photo analyses"></div>
+        -->
+      </footer>
+    </div>
+
+    <div id="pdf-layout-dialog" class="dialog" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="pdf-layout-title">
+      <div class="dialog-backdrop" id="pdf-layout-backdrop"></div>
+      <div class="dialog-card">
+        <h2 id="pdf-layout-title">Download PDF</h2>
+        <p>Choose how the photos are organised in the report.</p>
+        <label class="dialog-toggle" id="pdf-share-toggle-wrap" hidden>
+          <input type="checkbox" id="pdf-share" />
+          <span>Share via system (Save to Drive / Files)</span>
+        </label>
+        <div class="dialog-actions">
+          <button class="btn btn-primary" id="pdf-layout-download" type="button">Download</button>
+        </div>
+        <p class="dialog-help">
+          The PDF lists photos under each category — Floorplan, External
+          Elevations, Wall Construction and so on. Tick
+          <em>Share via system</em> to push the PDF straight to Drive,
+          Files, or any installed app via the OS share sheet — handy on iOS
+          where direct downloads can be unreliable for large files.
+        </p>
+        <button class="btn btn-ghost-dark" id="pdf-layout-cancel" type="button">Cancel</button>
+      </div>
+    </div>
+
+    <!-- AI dialogs hidden — uncomment to re-enable the Claude API settings dialog and the auto-label/auto-tag dialog.
+    <div id="settings-dialog" class="dialog" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="dialog-backdrop" id="settings-backdrop"></div>
+      <div class="dialog-card">
+        <h2 id="settings-title">Settings</h2>
+        <p>Configure the Claude API key used to analyse photos (identify meter make/model, smart-meter status, boiler specs, etc.).</p>
+        <div class="settings-grid">
+          <label class="settings-field">
+            <span>Claude API key</span>
+            <input id="settings-api-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-..." />
+            <button type="button" id="settings-api-key-toggle" class="settings-inline-btn" aria-label="Show/hide API key">Show</button>
+          </label>
+          <label class="settings-field">
+            <span>Default model</span>
+            <select id="settings-model"></select>
+          </label>
+        </div>
+        <label class="dialog-toggle">
+          <input type="checkbox" id="settings-auto-tag" />
+          <span>Auto-tag every new photo (radiator -> Heating, meter -> Meters, ...)</span>
+        </label>
+        <p class="dialog-help">
+          <strong>Key is stored in this browser only</strong> - in
+          <code>localStorage</code>, which any code running on this page (including
+          browser extensions) can read. Create a dedicated API key with spend
+          limits on the Anthropic Console and rotate it if you suspect it's been
+          exposed. The key never leaves your device except when making a request
+          to <code>api.anthropic.com</code>.
+        </p>
+        <div class="dialog-actions">
+          <button class="btn" id="settings-test" type="button">Test connection</button>
+          <button class="btn btn-primary" id="settings-save" type="button">Save</button>
+        </div>
+        <button class="btn btn-ghost-dark" id="settings-cancel" type="button">Cancel</button>
+      </div>
+    </div>
+
+    <div id="autolabel-dialog" class="dialog" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="autolabel-title">
+      <div class="dialog-backdrop" id="autolabel-backdrop"></div>
+      <div class="dialog-card">
+        <h2 id="autolabel-title">Auto-label &amp; tag</h2>
+        <p>Generate labels or photo tags (Heating / Meters / Windows / ...) across this property using Claude.</p>
+        <div class="settings-grid">
+          <label class="settings-field">
+            <span>Label scope</span>
+            <select id="autolabel-scope">
+              <option value="default-or-empty" selected>Only photos with the default label (recommended)</option>
+              <option value="unlabelled">Only photos with no label at all</option>
+              <option value="all">All photos (overwrite existing labels)</option>
+            </select>
+          </label>
+          <label class="settings-field">
+            <span>Tag scope</span>
+            <select id="autotag-scope">
+              <option value="untagged" selected>Only untagged photos (recommended)</option>
+              <option value="all">All photos (overwrite existing tags)</option>
+            </select>
+          </label>
+        </div>
+        <p class="dialog-help">
+          Every newly-captured photo starts with a default label like
+          <em>"Bedroom 1 - 3"</em>. <strong>Run auto-label</strong> replaces those
+          with something more descriptive while leaving any labels you've
+          typed manually alone. <strong>Run auto-tag</strong> sorts photos
+          into the same tags the camera-capture flow uses (Heating /
+          Meters / Ventilation / ...). Uses the model chosen in Settings -
+          <strong>Haiku is much cheaper</strong> for bulk runs.
+        </p>
+        <div class="dialog-actions">
+          <button class="btn btn-primary" id="autolabel-run" type="button">Run auto-label</button>
+          <button class="btn" id="autotag-run" type="button">Run auto-tag</button>
+        </div>
+        <button class="btn btn-ghost-dark" id="autolabel-cancel" type="button">Cancel</button>
+      </div>
+    </div>
+    -->
+
+
+    <div id="originals-parts-dialog" class="dialog" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="originals-parts-title">
+      <div class="dialog-backdrop" id="originals-parts-backdrop"></div>
+      <div class="dialog-card">
+        <h2 id="originals-parts-title">Originals ZIP — <span id="originals-parts-count">0 parts</span></h2>
+        <p>
+          Tap <strong>Save part N</strong> to download each part one at a time.
+          You can leave the app between parts — your progress is saved here, so
+          if iOS reloads the page when you come back, the unsaved parts will
+          still be waiting for you.
+        </p>
+        <ol class="originals-parts-list" id="originals-parts-list"></ol>
+        <p class="dialog-help">
+          Each part is a separate ZIP. Save them somewhere you can re-combine
+          them later (Drive, Files, your computer). The PDF and the compressed
+          ZIP are unaffected by this — they don't need to be split.
+        </p>
+        <button class="btn btn-ghost-dark" id="originals-parts-cancel" type="button">Cancel and clear plan</button>
+      </div>
+    </div>
+
+    <div id="export-photos-dialog" class="dialog" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="export-photos-title">
+      <div class="dialog-backdrop" id="export-photos-backdrop"></div>
+      <div class="dialog-card">
+        <h2 id="export-photos-title">Export photos</h2>
+        <p>
+          Choose how to export the photos from this property. Date and GPS
+          metadata are preserved in both options — stamped camera captures and
+          uploaded photos both retain their EXIF data.
+        </p>
+        <label class="dialog-toggle" id="export-share-toggle-wrap" hidden>
+          <input type="checkbox" id="export-share" />
+          <span>Share each ZIP via system (Save to Drive / Files)</span>
+        </label>
+        <div class="dialog-actions">
+          <button class="btn btn-primary" id="export-photos-zip" type="button">Download ZIP (compressed)</button>
+          <button class="btn" id="export-photos-zip-original" type="button">Download ZIP (originals)</button>
+        </div>
+        <p class="dialog-help" id="export-photos-help">
+          <strong>Download ZIP (compressed)</strong> is the safe default —
+          photos are re-encoded a little smaller so very large jobs still
+          fit within iOS in-app memory.
+          <strong>Download ZIP (originals)</strong> keeps every photo at
+          capture quality. Very large jobs are split automatically into
+          parts so each archive stays inside iOS in-app memory.
+          Tick <em>Share each ZIP via system</em> to send the archives straight
+          to Drive, Files, or any installed app via the OS share sheet
+          (recommended on iPhone PWA — much more reliable than direct downloads).
+          The ↓ button on any thumbnail always saves a single photo at full fidelity.
+        </p>
+        <button class="btn btn-ghost-dark" id="export-photos-cancel" type="button">Cancel</button>
+      </div>
+    </div>
+
+    <div id="camera-overlay" class="camera-overlay" hidden aria-hidden="true">
+      <video id="camera-video" autoplay playsinline muted></video>
+      <div class="camera-flash" id="camera-flash"></div>
+      <div class="camera-hud">
+        <div class="camera-hud-top">
+          <button id="camera-cancel" type="button" class="camera-hud-btn">Cancel</button>
+          <div class="camera-hud-title">
+            <span id="camera-title">Capture</span>
+            <span class="camera-count" id="camera-count">0</span>
+          </div>
+          <button id="camera-done" type="button" class="camera-hud-btn primary">Done</button>
+        </div>
+        <div class="camera-thumbs" id="camera-thumbs"></div>
+        <div class="camera-hud-bottom">
+          <button id="camera-switch" type="button" class="camera-hud-btn ghost" title="Switch camera" aria-label="Switch camera">⇄</button>
+          <button id="camera-shutter" type="button" class="camera-shutter" aria-label="Capture">
+            <span class="camera-shutter-inner"></span>
+          </button>
+          <button id="camera-torch" type="button" class="camera-hud-btn ghost" aria-pressed="false" aria-label="Toggle flash" title="Toggle flash" hidden>
+            <span class="camera-torch-icon" aria-hidden="true">⚡</span>
+            <span class="sr-only camera-torch-state">Flash off</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/piexifjs@1.0.6/piexif.js"></script>
+    <script src="app.js?v=103"></script>
+  </body>
+</html>

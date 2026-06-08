@@ -1,0 +1,26 @@
+{
+  "id": "/DEA-photos/",
+  "name": "DEA Photo Evidence",
+  "short_name": "DEA Photos",
+  "description": "Stamped and geotagged photo evidence for Domestic Energy Assessors.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "icon.png?v=2",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.png?v=2",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ]
+}
